@@ -4,9 +4,10 @@
 #include <iostream>
 #include <conio.h>
 #include <windows.h>
-#include <queue>
 
 using namespace std;
+
+const int MaxRecords = 4000;
 
 struct Record
 {
@@ -17,10 +18,29 @@ struct Record
     char CheckInDate[10];
 };
 
-void DisplayRecords(Record* array, int n)
+struct RecordArray
+{
+    Record records[MaxRecords];
+    int count;
+};
+
+void InitializeRecordArray(RecordArray& arr)
+{
+    arr.count = 0;
+}
+
+void AddRecord(RecordArray& arr, const Record& record)
+{
+    if (arr.count < MaxRecords)
+    {
+        arr.records[arr.count++] = record;
+    }
+}
+
+void DisplayRecords(const RecordArray& arr)
 {
     const int RecordsPerPage = 20;
-    int TotalPages = (n + RecordsPerPage - 1) / RecordsPerPage;
+    int TotalPages = (arr.count + RecordsPerPage - 1) / RecordsPerPage;
     int CurrentPage = 0;
 
     while (true)
@@ -28,17 +48,21 @@ void DisplayRecords(Record* array, int n)
         system("cls");
 
         cout << "Page " << CurrentPage + 1 << "/" << TotalPages << ":" << endl;
-
         cout << "Num\tFull Name\t\t\tStreet\t\tHouse Number\tApartment Number\tCheck-In Date" << endl;
 
-        for (int j = CurrentPage * RecordsPerPage; j < (CurrentPage + 1) * RecordsPerPage && j < n; ++j)
+        int startIdx = CurrentPage * RecordsPerPage;
+        int endIdx = min(startIdx + RecordsPerPage, arr.count);
+
+        for (int j = startIdx; j < endIdx; ++j)
         {
-            cout << j + 1 << "\t" << array[j].FullName << "\t" << array[j].Street << "\t" << array[j].HouseNumber << "\t\t" << array[j].ApartmentNumber << "\t\t" << array[j].CheckInDate << endl;
+            const Record& record = arr.records[j];
+            cout << j + 1 << "\t" << record.FullName << "\t" << record.Street << "\t" << record.HouseNumber
+                 << "\t\t" << record.ApartmentNumber << "\t\t" << record.CheckInDate << endl;
         }
 
         cout << "Use Left Arrow for Previous Page, Right Arrow for Next Page, 'Q' to Quit, or enter page number and press Enter: ";
 
-        char Input = getch();
+        char Input = _getch();
 
         if (Input == 'Q' || Input == 'q')
         {
@@ -63,7 +87,7 @@ void DisplayRecords(Record* array, int n)
             char NextChar;
             do
             {
-                NextChar = getch();
+                NextChar = _getch();
                 if (isdigit(NextChar))
                 {
                     Page = Page * 10 + (NextChar - '0');
@@ -77,68 +101,59 @@ void DisplayRecords(Record* array, int n)
     }
 }
 
-
-void SearchAndDisplay(Record* array, int n)
+void SearchAndDisplay(const RecordArray& arr)
 {
-    char Key[7];
-    cout << "Enter the search key (first 3 letters of Full Name and Street): ";
+    char Key[4]; // To store the search key (first 3 letters)
+    cout << "Enter the search key (first 3 letters of Full Name): ";
     cin.getline(Key, sizeof(Key));
 
-    queue<Record> MatchingRecords;
+    RecordArray MatchingRecords;
+    InitializeRecordArray(MatchingRecords);
 
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < arr.count; ++i)
     {
-        if (strncmp(array[i].FullName, Key, 3) == 0 && strncmp(array[i].Street, Key + 3, 3) == 0)
+        if (strncmp(arr.records[i].FullName, Key, 3) == 0)
         {
-            MatchingRecords.push(array[i]);
+            AddRecord(MatchingRecords, arr.records[i]);
         }
     }
 
-    if (MatchingRecords.empty())
+    if (MatchingRecords.count == 0)
     {
         cout << "No matching records found." << endl;
     }
     else
     {
         cout << "Matching records:" << endl;
-        Record* MatchingArray = new Record[MatchingRecords.size()];
-
-        int Index = 0;
-        while (!MatchingRecords.empty())
-        {
-            MatchingArray[Index++] = MatchingRecords.front();
-            MatchingRecords.pop();
-        }
-
-        DisplayRecords(MatchingArray, Index);
-
-        delete[] MatchingArray;
+        DisplayRecords(MatchingRecords);
     }
 
-
+    // Wait for a key press before returning to the menu
     cout << "Press any key to continue...";
-    getch();
+    _getch();
 }
 
-void HoareSort(Record* array, int first, int last)
+void HoareSort(RecordArray& arr, int first, int last)
 {
     int i = first, j = last;
-    Record tmp, x = array[(first + last) / 2];
+    Record tmp, x = arr.records[(first + last) / 2];
 
     do
     {
-        while (strncmp(array[i].FullName, x.FullName, 3) < 0 || (strncmp(array[i].FullName, x.FullName, 3) == 0 && strncmp(array[i].Street, x.Street, 3) < 0))
+        while (strncmp(arr.records[i].FullName, x.FullName, 32) < 0 ||
+               (strncmp(arr.records[i].FullName, x.FullName, 32) == 0 && strncmp(arr.records[i].Street, x.Street, 18) < 0))
             i++;
-        while (strncmp(array[j].FullName, x.FullName, 3) > 0 || (strncmp(array[j].FullName, x.FullName, 3) == 0 && strncmp(array[j].Street, x.Street, 3) > 0))
+        while (strncmp(arr.records[j].FullName, x.FullName, 32) > 0 ||
+               (strncmp(arr.records[j].FullName, x.FullName, 32) == 0 && strncmp(arr.records[j].Street, x.Street, 18) > 0))
             j--;
 
         if (i <= j)
         {
             if (i < j)
             {
-                tmp = array[i];
-                array[i] = array[j];
-                array[j] = tmp;
+                tmp = arr.records[i];
+                arr.records[i] = arr.records[j];
+                arr.records[j] = tmp;
             }
             i++;
             j--;
@@ -146,9 +161,9 @@ void HoareSort(Record* array, int first, int last)
     } while (i <= j);
 
     if (i < last)
-        HoareSort(array, i, last);
+        HoareSort(arr, i, last);
     if (first < j)
-        HoareSort(array, first, j);
+        HoareSort(arr, first, j);
 }
 
 int main()
@@ -161,15 +176,23 @@ int main()
         return 1;
     }
 
-    Record Database[4000] = {0};
+    RecordArray Database;
+    InitializeRecordArray(Database);
+
     int NumberOfRecords = 0;
-    NumberOfRecords = fread((Record *)Database, sizeof(Record), 4000, fp);
+    while (NumberOfRecords < MaxRecords && fread((Record *)&Database.records[NumberOfRecords], sizeof(Record), 1, fp) == 1)
+    {
+        NumberOfRecords++;
+    }
+
+    Database.count = NumberOfRecords;
     cout << "Total records: " << NumberOfRecords << endl;
 
-    Record* SortedDatabase = new Record[NumberOfRecords];
-    memcpy(SortedDatabase, Database, sizeof(Record) * NumberOfRecords);
+    // Make a copy of the sorted database
+    RecordArray SortedDatabase = Database;
 
-    HoareSort(SortedDatabase, 0, NumberOfRecords - 1);
+    // Sort the copy using HoareSort
+    HoareSort(SortedDatabase, 0, SortedDatabase.count - 1);
 
     while (true)
     {
@@ -178,30 +201,28 @@ int main()
         cout << "Menu:" << endl;
         cout << "1. View Unsorted Database" << endl;
         cout << "2. View Sorted Database" << endl;
-        cout << "3. Search by Key (Full Name and Street)" << endl;
+        cout << "3. Search by Key (Full Name)" << endl;
         cout << "4. Exit" << endl;
 
-        char Input = getch();
+        char Input = _getch();
 
         if (Input == '1')
         {
-            DisplayRecords(Database, NumberOfRecords);
+            DisplayRecords(Database);
         }
         else if (Input == '2')
         {
-            DisplayRecords(SortedDatabase, NumberOfRecords);
+            DisplayRecords(SortedDatabase);
         }
         else if (Input == '3')
         {
-            SearchAndDisplay(SortedDatabase, NumberOfRecords);
+            SearchAndDisplay(SortedDatabase); // Search in the sorted copy
         }
         else if (Input == '4')
         {
             break;
         }
     }
-
-    delete[] SortedDatabase;
 
     fclose(fp);
     return 0;
