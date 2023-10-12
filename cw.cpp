@@ -18,6 +18,84 @@ struct Record
     char CheckInDate[10];
 };
 
+struct QueueElement
+{
+    Record* record;
+    QueueElement* next;
+};
+
+struct RecordQueue
+{
+    QueueElement* front;
+    QueueElement* rear;
+    int count;
+};
+
+void InitializeRecordQueue(RecordQueue& queue)
+{
+    queue.front = nullptr;
+    queue.rear = nullptr;
+    queue.count = 0;
+}
+
+void Enqueue(RecordQueue& queue, Record* record)
+{
+    QueueElement* newElement = new QueueElement;
+    newElement->record = record;
+    newElement->next = nullptr;
+
+    if (queue.front == nullptr)
+    {
+        queue.front = newElement;
+        queue.rear = newElement;
+    }
+    else
+    {
+        queue.rear->next = newElement;
+        queue.rear = newElement;
+    }
+
+    queue.count++;
+}
+
+void DisplayQueue(const RecordQueue& queue)
+{
+    const int RecordsPerPage = 20;
+    QueueElement* current = queue.front;
+    int recordCount = 0;
+
+    while (current != nullptr)
+    {
+        if (recordCount % RecordsPerPage == 0)
+        {
+            system("cls");
+            cout << "Queue Contents:" << endl;
+            cout << "Num\tFull Name\t\t\tStreet\t\tHouse Number\tApartment Number\tCheck-In Date" << endl;
+        }
+
+        cout << recordCount + 1 << "\t" << current->record->FullName << "\t" << current->record->Street
+             << "\t" << current->record->HouseNumber << "\t\t" << current->record->ApartmentNumber
+             << "\t\t" << current->record->CheckInDate << endl;
+
+        current = current->next;
+        recordCount++;
+
+        if (recordCount % RecordsPerPage == 0)
+        {
+            cout << "Press 'Q' to Quit or any other key to continue...";
+
+            char Input = _getch();
+            if (Input == 'Q' || Input == 'q')
+                break;
+        }
+    }
+
+    cout << "Press any key to continue...";
+    _getch();
+}
+
+
+
 struct RecordArray
 {
     Record records[MaxRecords];
@@ -101,7 +179,7 @@ void DisplayRecords(const RecordArray& arr)
     }
 }
 
-void SearchAndDisplay(const RecordArray& arr)
+void SearchAndDisplay(RecordArray& arr, RecordQueue& searchQueue)
 {
     char Key[4]; // To store the search key (first 3 letters)
     cout << "Enter the search key (first 3 letters of Full Name): ";
@@ -115,6 +193,8 @@ void SearchAndDisplay(const RecordArray& arr)
         if (strncmp(arr.records[i].FullName, Key, 3) == 0)
         {
             AddRecord(MatchingRecords, arr.records[i]);
+            // Добавить запись в очередь searchQueue
+            Enqueue(searchQueue, &arr.records[i]);
         }
     }
 
@@ -132,6 +212,7 @@ void SearchAndDisplay(const RecordArray& arr)
     cout << "Press any key to continue...";
     _getch();
 }
+
 
 void HoareSort(RecordArray& arr, int first, int last)
 {
@@ -194,6 +275,9 @@ int main()
     // Sort the copy using HoareSort
     HoareSort(SortedDatabase, 0, SortedDatabase.count - 1);
 
+    RecordQueue searchQueue; // Очередь для записей с одинаковым ключом поиска
+    InitializeRecordQueue(searchQueue);
+
     while (true)
     {
         system("cls");
@@ -202,7 +286,8 @@ int main()
         cout << "1. View Unsorted Database" << endl;
         cout << "2. View Sorted Database" << endl;
         cout << "3. Search by Key (Full Name)" << endl;
-        cout << "4. Exit" << endl;
+        cout << "4. Display Search Queue" << endl;
+        cout << "5. Exit" << endl;
 
         char Input = _getch();
 
@@ -216,14 +301,29 @@ int main()
         }
         else if (Input == '3')
         {
-            SearchAndDisplay(SortedDatabase); // Search in the sorted copy
+            SearchAndDisplay(SortedDatabase, searchQueue); // Search in the sorted copy
         }
         else if (Input == '4')
+        {
+            DisplayQueue(searchQueue); // Отобразить содержимое очереди
+        }
+        else if (Input == '5')
         {
             break;
         }
     }
 
+    // Освобождаем память, выделенную для элементов очереди
+    QueueElement* current = searchQueue.front;
+    while (current != nullptr)
+    {
+        QueueElement* temp = current;
+        current = current->next;
+        delete temp;
+    }
+
     fclose(fp);
     return 0;
 }
+
+
