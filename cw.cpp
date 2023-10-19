@@ -111,7 +111,7 @@ void Enqueue(RecordQueue &queue, Record *record)
     queue.count++;
 }
 
-void DisplayQueue(const RecordQueue &queue, int currentPage)
+void DisplayQueue(const RecordQueue &queue, int &currentPage)
 {
     const int RecordsPerPage = 20;
     QueueElement *current = queue.front;
@@ -144,16 +144,20 @@ void DisplayQueue(const RecordQueue &queue, int currentPage)
 
         if (recordCount % RecordsPerPage == 0)
         {
-            cout << "Press 'Q' to return to the menu, Left Arrow for Previous Page, or any other key to continue...";
+            cout << "Press 'Q' to return to the menu, Left Arrow for Previous Page, Right Arrow for Next Page, or any other key to continue...";
             char Input = _getch();
 
             if (Input == 'Q' || Input == 'q')
                 break;
             else if (Input == 75 && currentPage > 0)
-                return; // Previous page
+                currentPage--; // Previous page
+            else if (Input == 77)
+                currentPage++; // Next page
         }
     }
 }
+
+
 
 struct RecordArray
 {
