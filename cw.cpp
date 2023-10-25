@@ -2,6 +2,9 @@
 #include <iostream>
 #include <conio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -56,15 +59,39 @@ void insert_queue(queue *q, record x) {
 }
 
 void display_queue(queue *q) {
-    if (q->frnt > q->rear) {
-        cout << "Queue is empty." << endl;
-    } else {
+    size_t count_zap_on_page = 20;
+    size_t currentPage = 0;
+    while (true) {
+        system("cls");
         cout << TITLE_COUT << endl << endl;
-        for (int i = q->frnt; i <= q->rear; i++) {
-            cout << QUEUE_RECORD_COUT << endl;
+
+        int start = currentPage * count_zap_on_page;
+        size_t end = (currentPage + 1) * count_zap_on_page - 1;
+        if (end > static_cast<size_t>(q->rear))
+        {
+            end = static_cast<size_t>(q->rear);
+        }
+
+        for (int i = start; i <= end; i++) {
+            cout << i << QUEUE_RECORD_COUT << endl;
+        }
+
+        cout << "Page " << currentPage + 1 << "/" << (q->rear / count_zap_on_page + 1) << endl;
+        cout << "Press 'Q' to quit, Left Arrow to go to the previous page, Right Arrow to go to the next page: ";
+
+        char input = _getch();
+
+        if (input == 'Q' || input == 'q') {
+            system("cls");
+            break;
+        } else if (input == 75 && currentPage > 0) {
+            currentPage--;
+        } else if (input == 77 && end < q->rear) {
+            currentPage++;
         }
     }
 }
+
 
 void display(record *mas_for_out, int size_mas_for_out)
 {
@@ -154,7 +181,8 @@ void search_func(record *mass_for_search, queue *q) {
 void menu()
 {
     record *mass = open_and_read_file();
-    queue *q = (queue*)malloc(sizeof(queue*) * QUEUE_SIZE); 
+    queue *q = (queue*)malloc(sizeof(queue));;
+    init_queue(q); 
     int choice;
 
     while (true)
@@ -183,6 +211,7 @@ void menu()
             system("cls");
             hoare_sort(mass, 0, 3999);
             search_func(mass, q);
+            display_queue(q);
             free(mass);
             break;
         case 4:
