@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
+#include <stack>
 
 using namespace std;
 
@@ -29,6 +30,148 @@ typedef struct queue {
     int rear, frnt;
 } queue;
 
+struct BSTNode {
+    record data;
+    BSTNode* left;
+    BSTNode* right;
+};
+
+// Function to create a new BST node
+BSTNode* createBSTNode(record data) {
+    BSTNode* newNode = new BSTNode();
+    newNode->data = data;
+    newNode->left = newNode->right = NULL;
+    return newNode;
+}
+
+int compare_records(const record &a, const record &b) {
+    int nameComparison = strcmp(a.fullname, b.fullname);
+    if (nameComparison == 0) {
+        return strcmp(a.street, b.street);
+    }
+    return nameComparison;
+}
+
+
+
+// Function to insert a record into the BST
+BSTNode* insertBST(BSTNode* root, record data) {
+    if (root == NULL) {
+        return createBSTNode(data);
+    }
+
+    if (compare_records(data, root->data) < 0) {
+        root->left = insertBST(root->left, data);
+    } else {
+        root->right = insertBST(root->right, data);
+    }
+
+    return root;
+}
+BSTNode* search_and_insert(BSTNode* root, record* records, int size) {
+    char key[4] = {0};
+    cin.ignore();
+    cin.getline(key, sizeof(key));
+    for (int i = 0; i < size; i++) {
+        if (strncmp(records[i].fullname, key, 3) == 0) {
+            root = insertBST(root, records[i]);
+        }
+    }
+    return root;
+}
+// Function to build a BST from an array of records
+BSTNode* buildOptimalBST(record* records, int start, int end) {
+    if (start > end) {
+        return NULL;
+    }
+
+    int mid = (start + end) / 2;
+    BSTNode* root = createBSTNode(records[mid]);
+
+    root->left = buildOptimalBST(records, start, mid - 1);
+    root->right = buildOptimalBST(records, mid + 1, end);
+
+    return root;
+}
+
+void insert_queue(queue *q, record x) {
+    if (q->rear == QUEUE_SIZE - 1) {
+        cout << "Queue is full. Cannot insert more elements." << endl;
+    } else {
+        q->rear++;
+        q->qu[q->rear] = x;
+    }
+}
+// Function to display the BST using in-order traversal
+int displayAllBST(BSTNode* root) {
+    if (root == nullptr) {
+        return 0;
+    }
+
+    int recordsPrinted = 0;
+
+    // Traverse the BST using in-order traversal
+    stack<BSTNode*> s;
+    BSTNode* current = root;
+
+    while (current != nullptr || !s.empty()) {
+        while (current != nullptr) {
+            s.push(current);
+            current = current->left;
+        }
+
+        current = s.top();
+        s.pop();
+
+        // Print the record
+        cout << recordsPrinted << "\t" << current->data.fullname << "\t" << current->data.street
+            << "\t" << current->data.house_num << "\t" << current->data.app_num
+            << "\t" << current->data.check_in_date << endl;
+        recordsPrinted++;
+
+        current = current->right;
+    }
+
+    return recordsPrinted;
+}
+
+
+
+
+void searchAllByHouseNumber(BSTNode* root, short int houseNumber, queue* q) {
+    if (root == nullptr) {
+        return;
+    }
+
+    // If the house number matches, add it to the queue
+    if (houseNumber == 255) {
+        insert_queue(q, root->data);
+    }
+    
+    if (houseNumber == root->data.house_num) {
+        insert_queue(q, root->data);
+    }
+
+    // Recursively search the left and right subtrees
+    searchAllByHouseNumber(root->left, houseNumber, q);
+    searchAllByHouseNumber(root->right, houseNumber, q);
+}
+
+void displaySearchResults(BSTNode* resultNode) {
+    if (resultNode == nullptr) {
+        cout << "House number not found." << endl;
+        return;
+    }
+
+    // Display the found record
+    cout << "Record found:" << endl;
+    cout << resultNode->data.fullname << "\t" << resultNode->data.street
+        << "\t" << resultNode->data.house_num << "\t" << resultNode->data.app_num
+        << "\t" << resultNode->data.check_in_date << endl;
+}
+
+
+
 record *initialize_mass_for_rofls(int mass_size)
 {
     record *mass = (record *)malloc(mass_size * sizeof(record));
@@ -49,14 +192,6 @@ void init_queue(queue *q) {
     q->rear = -1;
 }
 
-void insert_queue(queue *q, record x) {
-    if (q->rear == QUEUE_SIZE - 1) {
-        cout << "Queue is full. Cannot insert more elements." << endl;
-    } else {
-        q->rear++;
-        q->qu[q->rear] = x;
-    }
-}
 
 void display_queue(queue *q) {
     size_t count_zap_on_page = 20;
@@ -127,13 +262,7 @@ void display(record *mas_for_out, int size_mas_for_out)
     }
 }
 
-int compare_records(const record &a, const record &b) {
-    int nameComparison = strcmp(a.fullname, b.fullname);
-    if (nameComparison == 0) {
-        return strcmp(a.street, b.street);
-    }
-    return nameComparison;
-}
+
 
 void hoare_sort(record *array, int low, int high) {
     if (low < high) {
@@ -178,56 +307,71 @@ void search_func(record *mass_for_search, queue *q) {
     }
 }
 
-void menu()
-{
-    record *mass = open_and_read_file();
-    queue *q = (queue*)malloc(sizeof(queue));;
-    init_queue(q); 
+void menu() {
+    record* mass = open_and_read_file();
+    queue* q = (queue*)malloc(sizeof(queue));
+    BSTNode* searchRoot = nullptr;
+    init_queue(q);
     int choice;
+    BSTNode* root = nullptr; // Declare root here and initialize it
 
-    while (true)
-    {
+    while (choice != 'q' && choice != 'Q') {
         cout << "\n" << "1. Display records" << "\n" << endl;
         cout << "\n" << "2. Sort records" << "\n" << endl;
         cout << "\n" << "3. Search records" << "\n" << endl;
-        cout << "\n" << "4. Exit" << "\n" << endl;
+        cout << "\n" << "4. print tree" << "\n" << endl;
+        cout << "\n" << "5. search in tree" << "\n" << endl;
 
         cin >> choice;
 
-        switch (choice)
-        {
-        case 1:
-            system("cls");
-            display(mass, SIZE_MASS_REC);
-            free(mass);
-            break;
-        case 2:
-            system("cls");
-            hoare_sort(mass, 0, 3999);
-            display(mass, SIZE_MASS_REC);
-            free(mass);
-            break;
-        case 3:
-            system("cls");
-            hoare_sort(mass, 0, 3999);
-            search_func(mass, q);
-            display_queue(q);
-            free(mass);
-            break;
-        case 4:
-            // Выход из цикла
-            break;
-        default:
-            cout << "Invalid choice. Please choose a valid option." << endl;
-            break;
+        switch (choice) {
+            case 1:
+                // Display records code
+                break;
+            case 2:
+                // Sort records code
+                break;
+            case 3:
+                // Search records by name
+                system("cls");
+                hoare_sort(mass, 0, 3999);
+                search_func(mass, q);
+                display_queue(q);
+                free(mass);
+                break;
+            case 4:
+                // Build the BST and display optimal BST
+                hoare_sort(mass, 0, SIZE_MASS_REC - 1);
+                searchRoot = search_and_insert(searchRoot, mass, SIZE_MASS_REC);
+                cout << "Optimal Binary Search Tree (In-order Traversal):" << endl;
+                display_queue(q);
+                break;
+            case 5:
+                // Search records by house number
+                short int houseNumberToSearch;
+                cout << "Enter the house number to search: ";
+                cin >> houseNumberToSearch;
+
+                // Search for house numbers in the BST
+                searchAllByHouseNumber(searchRoot, houseNumberToSearch, q);
+
+                // Display search results
+                display_queue(q);
+                break;
+            default:
+                cout << "Invalid choice. Please choose a valid option." << endl;
+                break;
         }
     }
 
     free(mass);
 }
 
+
+
 int main()
 {
     menu();   
+
     return 0;
 }
