@@ -135,27 +135,21 @@ int displayAllBST(BSTNode* root) {
     return recordsPrinted;
 }
 
-
-
-
-void searchAllByHouseNumber(BSTNode* root, short int houseNumber, queue* q) {
+void searchAllByHouseNumber(BSTNode* root, short int houseNumber, char key[4], queue* q) {
     if (root == nullptr) {
         return;
     }
 
-    // If the house number matches, add it to the queue
-    if (houseNumber == 255) {
-        insert_queue(q, root->data);
-    }
-    
-    if (houseNumber == root->data.house_num) {
+    // If the house number matches the key, add it to the queue
+    if ((strncmp(root->data.fullname, key, 3) == 0) && (strncmp(root->data.street, key, 3) == 0)) {
         insert_queue(q, root->data);
     }
 
     // Recursively search the left and right subtrees
-    searchAllByHouseNumber(root->left, houseNumber, q);
-    searchAllByHouseNumber(root->right, houseNumber, q);
+    searchAllByHouseNumber(root->left, houseNumber, key, q);
+    searchAllByHouseNumber(root->right, houseNumber, key, q);
 }
+
 
 void displaySearchResults(BSTNode* resultNode) {
     if (resultNode == nullptr) {
@@ -337,7 +331,7 @@ void menu() {
                 hoare_sort(mass, 0, 3999);
                 search_func(mass, q);
                 display_queue(q);
-                free(mass);
+                
                 break;
             case 4:
                 // Build the BST and display optimal BST
@@ -347,17 +341,23 @@ void menu() {
                 display_queue(q);
                 break;
             case 5:
-                // Search records by house number
-                short int houseNumberToSearch;
-                cout << "Enter the house number to search: ";
-                cin >> houseNumberToSearch;
+            {
+                // Search records by key
+                char key[4] = {0};
+                cin.ignore();
+                cout << "Enter the search key (first 3 letters of Full Name): ";
+                cin.getline(key, sizeof(key));
 
-                // Search for house numbers in the BST
-                searchAllByHouseNumber(searchRoot, houseNumberToSearch, q);
+                BSTNode* NewRoot;
+                searchAllByHouseNumber(searchRoot,0, key, q);
 
                 // Display search results
-                display_queue(q);
+                displayAllBST(searchRoot);
+
+                // Update searchRoot to point to the new tree
+                searchRoot = NewRoot;
                 break;
+            }
             default:
                 cout << "Invalid choice. Please choose a valid option." << endl;
                 break;
@@ -366,8 +366,6 @@ void menu() {
 
     free(mass);
 }
-
-
 
 int main()
 {
