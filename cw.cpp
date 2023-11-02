@@ -69,16 +69,23 @@ BSTNode* insertBST(BSTNode* root, record data) {
     return root;
 }
 BSTNode* search_and_insert(BSTNode* root, record* records, int size) {
-    char key[4] = {0};
+    char key[100];  // Максимальная длина ключа, установите подходящее значение
+    cout << "Enter the key to search and insert: ";
     cin.ignore();
     cin.getline(key, sizeof(key));
+
     for (int i = 0; i < size; i++) {
-        if (strncmp(records[i].fullname, key, 3) == 0) {
+        if (strcmp(records[i].street, key) == 0) {
+            // Если ключ совпадает с полем "ФИО" или "Street", вставляем запись в дерево
             root = insertBST(root, records[i]);
         }
     }
-    return root;
+
+    cout << "Search and insert done" << endl;
+    return root;  // Возвращаем обновленный корень дерева
 }
+
+
 // Function to build a BST from an array of records
 BSTNode* buildOptimalBST(record* records, int start, int end) {
     if (start > end) {
@@ -104,10 +111,11 @@ void insert_queue(queue *q, record x) {
 }
 // Function to display the BST using in-order traversal
 int displayAllBST(BSTNode* root) {
+    
     if (root == nullptr) {
         return 0;
     }
-
+    printf("display works");
     int recordsPrinted = 0;
 
     // Traverse the BST using in-order traversal
@@ -301,6 +309,24 @@ void search_func(record *mass_for_search, queue *q) {
     }
 }
 
+void displaySearchResults(BSTNode* root, char key[4]) {
+    if (root == nullptr) {
+        return;
+    }
+
+    if (((strncmp(root->data.street, key, strlen(key)))) == 0) {
+        // Display the found record
+        cout << "Record found:" << '\t';
+        cout << root->data.fullname << "\t" << root->data.street
+            << "\t" << root->data.house_num << "\t" << root->data.app_num
+            << "\t" << root->data.check_in_date << endl;
+    }
+
+    displaySearchResults(root->left, key);
+    displaySearchResults(root->right, key);
+}
+
+
 void menu() {
     record* mass = open_and_read_file();
     queue* q = (queue*)malloc(sizeof(queue));
@@ -334,25 +360,29 @@ void menu() {
                 
                 break;
             case 4:
-                // Build the BST and display optimal BST
+                char key[100];  // Максимальная длина ключа, установите подходящее значение
+                cout << "Enter the key to search and insert: ";
+                cin.ignore();
+                cin.getline(key, sizeof(key));// Build the BST and display optimal BST
                 hoare_sort(mass, 0, SIZE_MASS_REC - 1);
-                searchRoot = search_and_insert(searchRoot, mass, SIZE_MASS_REC);
-                cout << "Optimal Binary Search Tree (In-order Traversal):" << endl;
-                display_queue(q);
+                searchRoot = buildOptimalBST(mass, 0, 3999);
+                root = search_and_insert(searchRoot, mass, SIZE_MASS_REC);
+                displaySearchResults(root, key); // Используем root вместо searchRoot
                 break;
+
             case 5:
             {
                 // Search records by key
                 char key[4] = {0};
                 cin.ignore();
-                cout << "Enter the search key (first 3 letters of Full Name): ";
+                cout << "Enter the search key (first 3 letters of Full Name) and : ";
                 cin.getline(key, sizeof(key));
 
                 BSTNode* NewRoot;
-                searchAllByHouseNumber(searchRoot,0, key, q);
+                // searchAllByHouseNumber(searchRoot,0, key, q);
 
                 // Display search results
-                displayAllBST(searchRoot);
+                
 
                 // Update searchRoot to point to the new tree
                 searchRoot = NewRoot;
